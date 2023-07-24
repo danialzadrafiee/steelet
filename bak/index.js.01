@@ -1,0 +1,164 @@
+const bip39 = require('bip39');
+
+function rotateRightN(arr, n) {
+    for (let i = 0; i < n; i++) {
+        let last = arr.pop();
+        arr.unshift(last);
+    }
+    return arr;
+}
+
+function splitArray(arr) {
+    const middleIndex = Math.floor(arr.length / 2) - 2;
+    const left = arr.slice(0, middleIndex);
+    const middle = arr.slice(middleIndex, middleIndex + 4);
+    const right = arr.slice(middleIndex + 4);
+    return { left, middle, right };
+}
+
+function visualizeGear(gear, rotations) {
+    const { left, middle, right } = splitArray(gear);
+    const visualLeft = left.map(item => item === 1 ? "■" : "□").join('');
+    const visualMiddle = middle.map(item => item === 1 ? "■" : "□").join('');
+    const visualRight = right.map(item => item === 1 ? "■" : "□").join('');
+    return `${visualLeft} ${visualMiddle} ${visualRight} : Rotate ${String(rotations / 4).padStart(2, '0')} times`;
+}
+
+// Generate all possible middle sequences
+const allMiddles = [];
+for (let i = 0; i < 64; i++) {
+    allMiddles.push([(i >> 3) & 1, (i >> 2) & 1, (i >> 1) & 1, i & 1]);
+}
+
+// Binary 0to15 Gear
+let gear = [];
+for (let i = 0; i < 16; i++) {
+    let binary = i.toString(2).padStart(4, '0');
+    for (let j = 0; j < 4; j++) {
+        gear.push(parseInt(binary[j]));
+    }
+}
+
+
+// This code will generate 64 gears 
+// const cylindrical = [];
+// // For each middle sequence, find the rotation that matches and store the visual representation along with the rotation count
+// for (const targetMiddle of allMiddles) {
+//     let currentGear = [...gear];
+//     for (let j = 0; j < gear.length / 4; j++) { // Only need to check 1/4th of the gear's length
+//         const { middle } = splitArray(currentGear);
+//         if (JSON.stringify(middle) === JSON.stringify(targetMiddle)) {
+//             cylindrical.push(visualizeGear(currentGear, j * 4)); // j*4 because we are rotating by 4 positions each time
+//             break;
+//         }
+//         currentGear = rotateRightN(currentGear, 4);
+//     }
+// }
+// console.log(cylindrical.join('\n'));
+
+
+
+
+const mnemonic = 'mix broken cement sock bronze neutral mandate noble depth mystery dignity raccoon okay example life skate allow stand taxi joke alpha moral planet violin';
+
+
+const wordlist = bip39.wordlists.EN;
+const words = mnemonic.split(' ');
+
+const binaryRepresentation = words.map(word => {
+    const index = wordlist.indexOf(word);
+    return index.toString(2).padStart(11, '0');
+}).join('');
+
+const fullBinary = binaryRepresentation;
+const rawBinary = binaryRepresentation.slice(0, -8);
+const checksum = binaryRepresentation.slice(-8);
+
+
+
+// Split the raw binary into 64 chunks of 4 bits each
+const chunks = [];
+for (let i = 0; i < rawBinary.length; i += 4) {
+    chunks.push(rawBinary.slice(i, i + 4));
+}
+
+// For each 4-bit chunk, find the corresponding rotation of the gear
+const cylindrical = [];
+for (const chunk of chunks) {
+    const binary_list = Array.from(chunk).map(bit => parseInt(bit));
+    let currentGear = [...gear];
+    for (let j = 0; j < gear.length / 4; j++) {
+        const { middle } = splitArray(currentGear);
+        if (JSON.stringify(middle) === JSON.stringify(binary_list)) {
+            cylindrical.push(visualizeGear(currentGear, j * 4));
+            break;
+        }
+        currentGear = rotateRightN(currentGear, 4);
+    }
+}
+
+console.log(cylindrical.join('\n'));
+
+// Extracting raw binary from the cylindrical representation
+function extractRawBinaryFromGear(cylindrical) {
+    const raw_binary = [];
+    for (const representation of cylindrical) {
+        const middle_visual = representation.split(" ")[1];
+        const binary_seq = middle_visual.split('').map(char => char === "■" ? 1 : 0);
+        raw_binary.push(...binary_seq);
+    }
+    return raw_binary.join('');
+}
+
+const extracted_raw_binary = extractRawBinaryFromGear(cylindrical);
+
+console.log(`\n\Input  Raw Bindary: ${rawBinary}`);
+console.log(`\n\Output Raw Bindary: ${extracted_raw_binary}`);
+
+
+
+
+
+document.addEventListener("DOMContentLoaded", () => {
+    const mnemonicInput = document.getElementById('mnemonicInput');
+    const generateBtn = document.getElementById('generateBtn');
+    const output = document.getElementById('output');
+
+    generateBtn.addEventListener('click', () => {
+        const mnemonic = mnemonicInput.value.trim();
+
+        // Conversion Logic
+        const wordlist = bip39.wordlists.EN;
+        const words = mnemonic.split(' ');
+
+        const binaryRepresentation = words.map(word => {
+            const index = wordlist.indexOf(word);
+            return index.toString(2).padStart(11, '0');
+        }).join('');
+
+        const rawBinary = binaryRepresentation.slice(0, -8);
+
+        // Split the raw binary into 64 chunks of 4 bits each
+        const chunks = [];
+        for (let i = 0; i < rawBinary.length; i += 4) {
+            chunks.push(rawBinary.slice(i, i + 4));
+        }
+
+        // For each 4-bit chunk, find the corresponding rotation of the gear
+        const cylindrical = [];
+        for (const chunk of chunks) {
+            const binary_list = Array.from(chunk).map(bit => parseInt(bit));
+            let currentGear = [...gear];
+            for (let j = 0; j < gear.length / 4; j++) {
+                const { middle } = splitArray(currentGear);
+                if (JSON.stringify(middle) === JSON.stringify(binary_list)) {
+                    cylindrical.push(visualizeGear(currentGear, j * 4));
+                    break;
+                }
+                currentGear = rotateRightN(currentGear, 4);
+            }
+        }
+
+        output.innerHTML = cylindrical.join('<br>');
+    });
+});
