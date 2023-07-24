@@ -26490,7 +26490,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const cylindrical = getCylindricalRepresentation(chunks);
 
         console.log(cylindrical);
-        console.log(extractRawBinaryFromGear(cylindrical));
+        console.log("cylindrical to mnemonic : " + kextractRawBinaryFromGear(cylindrical));
         const visualCylindrical = cylindrical.map(({ gear, rotations }) => visualizeGear(gear, rotations));
         output.innerHTML = visualCylindrical.join('<br>');
     });
